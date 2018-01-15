@@ -3,6 +3,7 @@ package main
 import (
     "log"
     "fmt"
+    "os"
     "strings"
     "bytes"
     "encoding/json"
@@ -56,14 +57,14 @@ func AddWorklog(writer http.ResponseWriter, request *http.Request) {
     time  := words[1]
 
     worklog := Worklog{Time_spent: time, Comment: ""} 
-    buffer := new(bytes.Buffer)
+    buffer  := new(bytes.Buffer)
     json.NewEncoder(buffer).Encode(worklog)
 
-    var url = "http://localhost:8080/rest/api/2/issue/" + issue + "/worklog"
+    var url = os.Getenv("MATTERMOST_JIRA_HOST") + "/rest/api/2/issue/" + issue + "/worklog"
 
     client := &http.Client{}
     req, err := http.NewRequest("POST", url, buffer)
-    req.SetBasicAuth("justin", "somepass")
+    req.SetBasicAuth(os.Getenv("MATTERMOST_JIRA_USERNAME"), os.Getenv("MATTERMOST_JIRA_PASSWORD"))
     req.Header.Add("Content-Type", "application/json")
 
     resp, err := client.Do(req)
@@ -75,6 +76,6 @@ func AddWorklog(writer http.ResponseWriter, request *http.Request) {
 
     writer.Header().Set("Content-Type", "application/json")
 
-    response := Response{Response_type: "in_channel", Text: payload.User_name + " spent " + time + " on " + issue}
+    response := Response{Response_type: "in_channel", Text: "@" + payload.User_name + " spent " + time + " on " + issue}
     json.NewEncoder(writer).Encode(response)
 }
